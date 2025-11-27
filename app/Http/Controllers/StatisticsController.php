@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Book;
+use App\Models\Category;
 use Illuminate\Http\Request;
 
 class StatisticsController extends Controller
@@ -31,9 +32,26 @@ class StatisticsController extends Controller
 
     }
 
+    // Wasn't sure top 3 together or separate, here together
     public function getTopFantasyAndSciFi()
     {
+        $books = Book::all();
+        $categories = ['Fantasy', 'Sci-Fi'];
 
+        foreach ($books as $book)
+        {
+            // Ideally using slugs here
+            if ($book->category_id == $this->getCategory('Fantasy') || $book->category_id == $this->getCategory('Sci-Fi'))
+            {
+                return collect($books)
+                ->filter(function ($book) use ($categories) {
+                    $categoryId = $this->getCategoryById($book->category_id);
+                    return in_array($categoryId, $categories);
+                })
+                ->sortByDesc('price_huf')
+                ->take(3);
+            }
+        }
     }
     
     private function calculateAveragePrice($books)
@@ -53,5 +71,16 @@ class StatisticsController extends Controller
         $averagePrice = $pricesSum/count($prices);
 
         return $averagePrice;
+    }
+
+    // Quick public solution so that I can easily reach from web.php
+    public function getCategory($categoryName)
+    {
+        return Category::where('name', $categoryName)->value('id');
+    }
+
+    public function getCategoryById($categoryId)
+    {
+        return Category::where('id', $categoryId)->value('name');
     }
 }
